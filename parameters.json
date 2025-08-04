@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "staticWebAppName": {
+      "value": "mystaticwebapp-dev"
+    },
+    "location": {
+      "value": "East US 2"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "tags": {
+      "value": {
+        "Project": "MyProject",
+        "Owner": "DevTeam",
+        "CostCenter": "IT"
+      }
+    },
+    "repositoryUrl": {
+      "value": "https://dev.azure.com/YourOrganization/YourProject/_git/YourRepository"
+    },
+    "branch": {
+      "value": "main"
+    },
+    "repositoryToken": {
+      "value": "YOUR_AZURE_DEVOPS_PAT_TOKEN"
+    },
+    "sku": {
+      "value": "Free"
+    },
+    "customDomainName": {
+      "value": ""
+    },
+    "buildProperties": {
+      "value": {
+        "appLocation": "/",
+        "apiLocation": "",
+        "outputLocation": ""
+      }
+    },
+    "publicNetworkAccess": {
+      "value": "Enabled"
+    }
+  }
+}

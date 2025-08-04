@@ -1,0 +1,181 @@
+# Azure DevOps Pipeline for Static Web App Deployment
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+  paths:
+    include:
+    - index.html
+    - src/*
+    - assets/*
+    - main.bicep
+    - staticWebApp.bicep
+    - parameters.json
+
+variables:
+  azureServiceConnection: 'YourAzureServiceConnection' # Replace with your service connection name
+  resourceGroupName: 'rg-staticwebapp-dev'
+  location: 'East US 2'
+  subscriptionId: 'YOUR_SUBSCRIPTION_ID' # Replace with your subscription ID
+
+stages:
+- stage: DeployInfrastructure
+  displayName: 'Deploy Infrastructure'
+  condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), contains(variables['Build.SourceVersionMessage'], '[deploy-infra]'))
+  jobs:
+  - job: DeployBicep
+    displayName: 'Deploy Bicep Template'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+      displayName: 'Checkout Repository'
+
+    - task: AzureCLI@2
+      displayName: 'Create Resource Group'
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az group create --name $(resourceGroupName) --location "$(location)"
+
+    - task: AzureResourceManagerTemplateDeployment@3
+      displayName: 'Deploy Static Web App Infrastructure'
+      inputs:
+        deploymentScope: 'Resource Group'
+        azureResourceManagerConnection: $(azureServiceConnection)
+        subscriptionId: $(subscriptionId)
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: $(resourceGroupName)
+        location: $(location)
+        templateLocation: 'Linked artifact'
+        csmFile: 'main.bicep'
+        csmParametersFile: 'parameters.json'
+        overrideParameters: |
+          -repositoryToken $(System.AccessToken)
+          -repositoryUrl $(Build.Repository.Uri)
+          -branch $(Build.SourceBranchName)
+        deploymentMode: 'Incremental'
+        deploymentName: 'staticwebapp-$(Build.BuildId)'
+
+    - task: AzureCLI@2
+      displayName: 'Get Deployment Token'
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Get the static web app name from the deployment output
+          STATIC_WEB_APP_NAME=$(az deployment group show \
+            --resource-group $(resourceGroupName) \
+            --name staticwebapp-$(Build.BuildId) \
+            --query properties.outputs.staticWebAppName.value -o tsv)
+          
+          # Get the deployment token
+          DEPLOYMENT_TOKEN=$(az staticwebapp secrets list \
+            --name $STATIC_WEB_APP_NAME \
+            --resource-group $(resourceGroupName) \
+            --query properties.apiKey -o tsv)
+          
+          echo "##vso[task.setvariable variable=deploymentToken;isSecret=true]$DEPLOYMENT_TOKEN"
+          echo "##vso[task.setvariable variable=staticWebAppName]$STATIC_WEB_APP_NAME"
+
+- stage: DeployApplication
+  displayName: 'Deploy Application'
+  dependsOn: []
+  condition: always()
+  jobs:
+  - job: DeployStaticWebApp
+    displayName: 'Deploy to Static Web App'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+      displayName: 'Checkout Repository'
+
+    - task: AzureCLI@2
+      displayName: 'Get Static Web App Details'
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Get the static web app name and deployment token
+          STATIC_WEB_APP_NAME=$(az staticwebapp list \
+            --resource-group $(resourceGroupName) \
+            --query "[0].name" -o tsv)
+          
+          DEPLOYMENT_TOKEN=$(az staticwebapp secrets list \
+            --name $STATIC_WEB_APP_NAME \
+            --resource-group $(resourceGroupName) \
+            --query properties.apiKey -o tsv)
+          
+          echo "##vso[task.setvariable variable=deploymentToken;isSecret=true]$DEPLOYMENT_TOKEN"
+          echo "##vso[task.setvariable variable=staticWebAppName]$STATIC_WEB_APP_NAME"
+
+    - task: AzureStaticWebApp@0
+      displayName: 'Deploy Static Web App'
+      inputs:
+        app_location: '/' # Root of your app
+        api_location: '' # Api source code path - optional
+        output_location: '' # Built app content directory - optional
+        azure_static_web_apps_api_token: $(deploymentToken)
+        skip_app_build: false
+        skip_api_build: true
+
+    - task: AzureCLI@2
+      displayName: 'Display Static Web App URL'
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Get the default hostname
+          DEFAULT_HOSTNAME=$(az staticwebapp show \
+            --name $(staticWebAppName) \
+            --resource-group $(resourceGroupName) \
+            --query defaultHostname -o tsv)
+          
+          echo "Static Web App deployed successfully!"
+          echo "URL: https://$DEFAULT_HOSTNAME"
+          echo "##vso[task.setvariable variable=staticWebAppUrl]https://$DEFAULT_HOSTNAME"
+
+- stage: PostDeployment
+  displayName: 'Post Deployment'
+  dependsOn: DeployApplication
+  condition: succeeded()
+  jobs:
+  - job: ValidateDeployment
+    displayName: 'Validate Deployment'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Health Check'
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Get the static web app URL
+          STATIC_WEB_APP_NAME=$(az staticwebapp list \
+            --resource-group $(resourceGroupName) \
+            --query "[0].name" -o tsv)
+          
+          DEFAULT_HOSTNAME=$(az staticwebapp show \
+            --name $STATIC_WEB_APP_NAME \
+            --resource-group $(resourceGroupName) \
+            --query defaultHostname -o tsv)
+          
+          # Simple health check
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$DEFAULT_HOSTNAME)
+          
+          if [ $HTTP_STATUS -eq 200 ]; then
+            echo "✅ Static Web App is healthy and responding"
+            echo "URL: https://$DEFAULT_HOSTNAME"
+          else
+            echo "❌ Static Web App health check failed with status: $HTTP_STATUS"
+            exit 1
+          fi
