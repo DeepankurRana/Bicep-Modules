@@ -23,6 +23,12 @@
         "OwnerEmail": "adelsink@mubadalacapital.ae",
         "TechnicalOwner": "jcheriya@mubadalacapital.ae"
       }
+    },
+    "repositoryUrl": {
+      "value": "https://github.com/your-org/your-repo"
+    },
+    "branch": {
+      "value": "main"
     }
   }
 }
