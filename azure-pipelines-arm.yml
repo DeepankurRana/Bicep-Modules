@@ -1,0 +1,37 @@
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+
+variables:
+- group: deployment_token  # Reference to your existing Variable Group
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: Deploy
+  displayName: 'Deploy Static Web App'
+  jobs:
+  - job: DeployBicep
+    displayName: 'Deploy Bicep Template'
+    steps:
+    - task: AzureResourceManagerTemplateDeployment@3
+      displayName: 'Deploy Static Web App via ARM'
+      inputs:
+        deploymentScope: 'Resource Group'
+        azureResourceManagerConnection: 'your-service-connection-name'  # Replace with your service connection
+        subscriptionId: 'bfa594d5-81bb-482d-8632-5bd5a845f789'
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: 'staticwebapp'
+        location: 'Sweden Central'
+        templateLocation: 'Linked artifact'
+        csmFile: '$(System.DefaultWorkingDirectory)/StaticWebApp.bicep'
+        csmParametersFile: '$(System.DefaultWorkingDirectory)/parameter.json'
+        overrideParameters: |
+          -repositoryToken "$(github-token)"
+          -repositoryUrl "$(repository-url)"
+          -branch "$(branch-name)"
+        deploymentMode: 'Incremental'
+        deploymentName: 'StaticWebApp-$(Build.BuildId)'
