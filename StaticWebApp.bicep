@@ -45,9 +45,12 @@ param templateProperties object?
 @description('Optional. The provider that submitted the last deployment to the primary environment of the static site.')
 param provider string = 'None'
 
-@secure()
-@description('Optional. The Personal Access Token for accessing the GitHub repository.')
-param repositoryToken string?
+// @secure()
+// @description('Optional. The Personal Access Token for accessing the GitHub repository.')
+// param repositoryToken string?
+
+@description('Optional. Key Vault reference for the repository token (format: @Microsoft.KeyVault(SecretUri=https://vault.vault.azure.net/secrets/secret/))')
+param repositoryTokenFromKeyVault string?
 
 @description('Optional. The name of the GitHub repository.')
 param repositoryUrl string?
@@ -144,7 +147,7 @@ resource staticSite 'Microsoft.Web/staticSites@2024-04-01' = {
     provider: !empty(provider) ? provider : 'None'
     branch: branch
     buildProperties: buildProperties
-    repositoryToken: repositoryToken
+    repositoryToken: repositoryTokenFromKeyVault
     repositoryUrl: repositoryUrl
     templateProperties: templateProperties
     publicNetworkAccess: publicNetworkAccess
