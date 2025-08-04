@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Static Web App - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 600px;
+            margin: 2rem;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #0078d4, #00bcf2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .feature {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border-left: 4px solid #0078d4;
+        }
+        
+        .feature h3 {
+            color: #0078d4;
+            margin-bottom: 0.5rem;
+        }
+        
+        .feature p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .status {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .deployment-info {
+            background: #e3f2fd;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #1565c0;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(45deg, #0078d4, #00bcf2);
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 25px;
+            margin: 0.5rem;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .footer {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">⚡</div>
+        <h1>Azure Static Web App</h1>
+        <p class="subtitle">Deployed with Bicep & Azure DevOps</p>
+        
+        <div class="status">
+            ✅ <strong>Deployment Successful!</strong> Your static web app is running with system-assigned managed identity.
+        </div>
+        
+        <div class="deployment-info">
+            <strong>Deployment Details:</strong><br>
+            📅 Deployed: <span id="deployTime"></span><br>
+            🔧 Provider: Azure DevOps<br>
+            🏗️ Infrastructure: Bicep Templates<br>
+            🔐 Identity: System-Assigned Managed Identity
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>🚀 Auto Deployment</h3>
+                <p>Automatically deploys when index.html or source files are updated in the repository.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🔐 Managed Identity</h3>
+                <p>System-assigned managed identity is automatically configured for secure Azure resource access.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🏗️ Infrastructure as Code</h3>
+                <p>Deployed using Bicep templates with parameterized configuration for different environments.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🔄 CI/CD Pipeline</h3>
+                <p>Azure DevOps pipeline handles both infrastructure deployment and application updates.</p>
+            </div>
+        </div>
+        
+        <div>
+            <a href="https://docs.microsoft.com/en-us/azure/static-web-apps/" class="btn" target="_blank">
+                📚 Documentation
+            </a>
+            <a href="https://github.com" class="btn" target="_blank">
+                💻 Source Code
+            </a>
+        </div>
+        
+        <div class="footer">
+            <p>
+                <strong>Next Steps:</strong><br>
+                • Customize your application content<br>
+                • Configure custom domains<br>
+                • Set up staging environments<br>
+                • Add API functions (optional)
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Display current deployment time
+        document.getElementById('deployTime').textContent = new Date().toLocaleString();
+        
+        // Simple animation for the logo
+        const logo = document.querySelector('.logo');
+        logo.addEventListener('mouseover', () => {
+            logo.style.transform = 'rotate(360deg) scale(1.1)';
+            logo.style.transition = 'transform 0.5s ease';
+        });
+        
+        logo.addEventListener('mouseout', () => {
+            logo.style.transform = 'rotate(0deg) scale(1)';
+        });
+        
+        // Add some interactivity
+        const features = document.querySelectorAll('.feature');
+        features.forEach(feature => {
+            feature.addEventListener('click', () => {
+                feature.style.transform = 'scale(1.05)';
+                feature.style.transition = 'transform 0.2s ease';
+                setTimeout(() => {
+                    feature.style.transform = 'scale(1)';
+                }, 200);
+            });
+        });
+    </script>
+</body>
+</html>
